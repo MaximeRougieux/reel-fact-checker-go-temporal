@@ -66,6 +66,9 @@ func main() {
 	}
 
 	var summarizer factcheck.Summarizer = factcheck.MockSummarizer{}
+	if os.Getenv("ANTHROPIC_API_KEY") != "" {
+		summarizer = factcheck.NewClaudeSummarizer(config.JudgeModel())
+	}
 
 	w := worker.New(c, config.TaskQueue(), worker.Options{})
 	w.RegisterWorkflow(factcheck.FactCheckWorkflow)
