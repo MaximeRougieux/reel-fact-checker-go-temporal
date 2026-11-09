@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reel Fact-Check</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --card: #ffffff; --text: #1b1b18; --muted: #6b6b64; --line: #e3e3de;
+    --accent: #2f5bd8;
+    --supported: #2e7d4f; --refuted: #c0392b; --contested: #b7791f; --neutral: #8a8a82;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151514; --card: #1f1f1d; --text: #ececE6; --muted: #9a9a92; --line: #333330;
+      --accent: #7c9cff;
+      --supported: #55b97d; --refuted: #e86a5c; --contested: #e0a93e; --neutral: #8f8f87;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  form { display: flex; gap: 8px; flex-wrap: wrap; }
+  input[type=url] { flex: 1 1 320px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--card); color: var(--text); font: inherit; }
+  button { padding: 10px 18px; border-radius: 8px; border: 0; background: var(--accent); color: #fff;
+    font: inherit; font-weight: 600; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); font-weight: 500; padding: 4px 10px; }
+  #status { margin: 20px 0 0; color: var(--muted); min-height: 1.5em; }
+  #status.error { color: var(--refuted); }
+  .meta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 20px 0 8px; color: var(--muted); font-size: 14px; }
+  .claim { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 12px 0; }
+  .claim p { margin: 0 0 8px; font-weight: 600; }
+  .badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 99px;
+    color: #fff; text-transform: uppercase; letter-spacing: .03em; }
+  .badge.supported { background: var(--supported); } .badge.refuted { background: var(--refuted); }
+  .badge.contested { background: var(--contested); } .badge.insufficient_evidence, .badge.not_checkable { background: var(--neutral); }
+  .kind { color: var(--muted); font-size: 13px; margin-left: 8px; }
+  .bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--line); margin: 10px 0 4px; }
+  .bar span { display: block; height: 100%; }
+  .bar .s { background: var(--supported); } .bar .r { background: var(--refuted); } .bar .i { background: var(--neutral); }
+  .legend { color: var(--muted); font-size: 13px; }
+  ul.sources { margin: 8px 0 0; padding-left: 18px; font-size: 14px; }
+  ul.sources a { color: var(--accent); word-break: break-all; }
+  details { margin-top: 20px; }
+  details pre { white-space: pre-wrap; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px; font: 14px/1.5 inherit; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Reel Fact-Check</h1>
+  <p class="sub">Paste an Instagram reel link. We transcribe it, extract its claims and check them against news sources.</p>
+  <form id="form">
+    <input id="url" type="url" required placeholder="https://www.instagram.com/reel/…" autocomplete="off">
+    <button id="go" type="submit">Check</button>
+  </form>
+  <p id="status" role="status" aria-live="polite"></p>
+  <div id="out"></div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const LABELS = { supported: "Supported", refuted: "Refuted", contested: "Contested",
+  insufficient_evidence: "Insufficient evidence", not_checkable: "Not checkable" };
+let timer = null;
+
+function setStatus(msg, isError) { const s = $("status"); s.textContent = msg; s.className = isError ? "error" : ""; }
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function pct(x) { return Math.round((x || 0) * 100); }
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  let body = {};
+  try { body = await r.json(); } catch (_) {}
+  if (!r.ok) throw new Error(body.error || "request failed (" + r.status + ")");
+  return body;
+}
+
+async function start(refresh) {
+  clearTimeout(timer);
+  $("out").replaceChildren();
+  $("go").disabled = true;
+  setStatus("Starting…");
+  try {
+    const res = await api("/api/check", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: $("url").value.trim(), refresh: !!refresh }) });
+    poll(res.workflowId, res.cached);
+  } catch (e) { setStatus(e.message, true); $("go").disabled = false; }
+}
+
+async function poll(id, cached) {
+  try {
+    const s = await api("/api/check/" + encodeURIComponent(id));
+    if (s.status === "running") { setStatus("Working: " + s.stage + "…"); timer = setTimeout(() => poll(id, cached), 1500); return; }
+    $("go").disabled = false;
+    if (s.status === "failed") { setStatus(s.error, true); return; }
+    setStatus("");
+    render(s.report, cached, s.completedAt);
+  } catch (e) { setStatus(e.message, true); $("go").disabled = false; }
+}
+
+function render(report, cached, completedAt) {
+  const out = $("out");
+  const meta = el("div", "meta");
+  meta.append(el("span", null, cached ? "Cached result from " + new Date(completedAt).toLocaleString() : "Fresh result"));
+  const again = el("button", "ghost", "Re-run"); again.type = "button"; again.onclick = () => start(true);
+  meta.append(again);
+  out.append(meta);
+
+  if (!report.verdicts.length) out.append(el("p", null, "No checkable claims were found in this reel."));
+  for (const v of report.verdicts) {
+    const c = el("div", "claim");
+    c.append(el("p", null, v.claim.text));
+    const head = el("div");
+    head.append(el("span", "badge " + v.label, LABELS[v.label] || v.label));
+    head.append(el("span", "kind", v.claim.kind === "implication" ? "implication" : "fact"));
+    c.append(head);
+    const p = v.probabilities;
+    if (p && v.label !== "not_checkable" && v.label !== "insufficient_evidence") {
+      const bar = el("div", "bar");
+      for (const [k, cls] of [["supported", "s"], ["refuted", "r"], ["insufficient_evidence", "i"]]) {
+        const seg = el("span", cls); seg.style.width = pct(p[k]) + "%"; bar.append(seg);
+      }
+      c.append(bar);
+      c.append(el("div", "legend", "supported " + pct(p.supported) + "% · refuted " + pct(p.refuted) + "% · insufficient " + pct(p.insufficient_evidence) + "%"));
+    } else if (v.label === "not_checkable") {
+      c.append(el("div", "legend", "A private matter that no public source can settle; no search was made."));
+    } else {
+      c.append(el("div", "legend", "The sources found do not settle this claim."));
+    }
+    const ev = (v.evidence || []).slice().sort((a, b) => b.score - a.score).slice(0, 3).filter((e) => /^https?:\/\//.test(e.source));
+    if (ev.length && v.label !== "not_checkable") {
+      const ul = el("ul", "sources");
+      for (const e of ev) { const li = el("li"); const a = el("a", null, e.source); a.href = e.source; a.target = "_blank"; a.rel = "noopener noreferrer"; li.append(a); ul.append(li); }
+      c.append(ul);
+    }
+    out.append(c);
+  }
+  if (report.summary) {
+    const d = el("details"); d.append(el("summary", null, "Written report"));
+    d.append(el("pre", null, report.summary)); out.append(d);
+  }
+}
+
+$("form").addEventListener("submit", (e) => { e.preventDefault(); start(false); });
+
+const q = new URLSearchParams(location.search).get("url");
+if (q) { $("url").value = q; start(false); }
+</script>
+</body>
+</html>
