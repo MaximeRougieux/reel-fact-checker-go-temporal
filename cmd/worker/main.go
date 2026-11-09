@@ -9,6 +9,7 @@ import (
 
 	"reel-fact-checker-go-temporal/factcheck"
 	"reel-fact-checker-go-temporal/internal/config"
+	"reel-fact-checker-go-temporal/internal/llmconfig"
 )
 
 func main() {
@@ -17,15 +18,15 @@ func main() {
 	var extractor factcheck.ClaimExtractor = factcheck.MockExtractor{}
 	var judge factcheck.ClaimJudge = factcheck.MockJudge{}
 	var summarizer factcheck.Summarizer = factcheck.MockSummarizer{}
-	if provider := config.LLMProvider(); provider != "" {
-		if os.Getenv(config.LLMKeyVar(provider)) == "" {
-			log.Fatalf("LLM provider %q needs %s", provider, config.LLMKeyVar(provider))
+	if provider := llmconfig.Provider(); provider != "" {
+		if os.Getenv(llmconfig.KeyVar(provider)) == "" {
+			log.Fatalf("LLM provider %q needs %s", provider, llmconfig.KeyVar(provider))
 		}
-		extractLLM, err := factcheck.NewLLM(provider, config.ExtractorModel())
+		extractLLM, err := factcheck.NewLLM(provider, llmconfig.ExtractorModel())
 		if err != nil {
 			log.Fatalln(err)
 		}
-		judgeLLM, err := factcheck.NewLLM(provider, config.JudgeModel())
+		judgeLLM, err := factcheck.NewLLM(provider, llmconfig.JudgeModel())
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -36,7 +37,7 @@ func main() {
 			log.Fatalln(err)
 		}
 		summarizer = factcheck.NewLLMSummarizer(judgeLLM)
-		log.Println("LLM provider:", provider, "| extractor model:", config.ExtractorModel(), "| judge and summarizer model:", config.JudgeModel())
+		log.Println("LLM provider:", provider, "| extractor model:", llmconfig.ExtractorModel(), "| judge and summarizer model:", llmconfig.JudgeModel())
 	} else {
 		log.Println("claim extractor, judge, summarizer: mock (no ANTHROPIC_API_KEY or MISTRAL_API_KEY)")
 	}

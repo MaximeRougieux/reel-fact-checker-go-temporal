@@ -31,51 +31,16 @@ func LoadDotEnv(path string) {
 	}
 }
 
-// LLMProvider picks the text-model provider: LLM_PROVIDER if set, otherwise
-// whichever API key is present. Empty means no provider is configured and the
-// Worker uses mocks.
-func LLMProvider() string {
-	if p := os.Getenv("LLM_PROVIDER"); p != "" {
-		return strings.ToLower(p)
-	}
-	switch {
-	case os.Getenv("ANTHROPIC_API_KEY") != "":
-		return "claude"
-	case os.Getenv("MISTRAL_API_KEY") != "":
-		return "mistral"
-	}
-	return ""
-}
+func Fetcher() string  { return Get("FETCHER", "mock") } // "mock" or "browser"
+func AudioDir() string { return Get("AUDIO_DIR", "data/audio") }
+func FFmpeg() string   { return Get("FFMPEG_PATH", "ffmpeg") }
 
-// LLMKeyVar is the environment variable holding a provider's API key.
-func LLMKeyVar(provider string) string {
-	if provider == "mistral" {
-		return "MISTRAL_API_KEY"
-	}
-	return "ANTHROPIC_API_KEY"
-}
+func Transcriber() string  { return Get("TRANSCRIBER", "mock") } // "mock", "whisper" or "voxtral"
+func WhisperCLI() string   { return Get("WHISPER_CLI", "whisper-cli") }
+func WhisperModel() string { return Get("WHISPER_MODEL", "models/ggml-large-v3-turbo.bin") }
 
-func ExtractorModel() string {
-	if LLMProvider() == "mistral" {
-		return get("MISTRAL_MODEL", "mistral-small-latest")
-	}
-	return get("ANTHROPIC_MODEL", "claude-haiku-5-5")
-}
+func VoxtralModel() string { return Get("VOXTRAL_MODEL", "voxtral-mini-latest") }
 
-func Fetcher() string  { return get("FETCHER", "mock") } // "mock" or "browser"
-func AudioDir() string { return get("AUDIO_DIR", "data/audio") }
-func FFmpeg() string   { return get("FFMPEG_PATH", "ffmpeg") }
+func SearchTopic() string { return Get("TAVILY_TOPIC", "news") } // "news" or "general"
 
-func Transcriber() string  { return get("TRANSCRIBER", "mock") } // "mock", "whisper" or "voxtral"
-func WhisperCLI() string   { return get("WHISPER_CLI", "whisper-cli") }
-func WhisperModel() string { return get("WHISPER_MODEL", "models/ggml-large-v3-turbo.bin") }
-
-func VoxtralModel() string { return get("VOXTRAL_MODEL", "voxtral-mini-latest") }
-
-func JudgeModel() string {
-	return get("ANTHROPIC_JUDGE_MODEL", ExtractorModel())
-}
-
-func SearchTopic() string { return get("TAVILY_TOPIC", "news") } // "news" or "general"
-
-func SearchDepth() string { return get("TAVILY_DEPTH", "basic") } // "basic" or "advanced"
+func SearchDepth() string { return Get("TAVILY_DEPTH", "basic") } // "basic" or "advanced"
