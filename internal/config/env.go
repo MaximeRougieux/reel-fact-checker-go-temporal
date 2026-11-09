@@ -40,3 +40,7 @@ func FFmpeg() string   { return get("FFMPEG_PATH", "ffmpeg") }
 func Transcriber() string  { return get("TRANSCRIBER", "mock") } // "mock" or "whisper"
 func WhisperCLI() string   { return get("WHISPER_CLI", "whisper-cli") }
 func WhisperModel() string { return get("WHISPER_MODEL", "models/ggml-large-v3-turbo.bin") }
+
+func SearchTopic() string { return get("TAVILY_TOPIC", "news") } // "news" or "general"
+
+func SearchDepth() string { return get("TAVILY_DEPTH", "basic") } // "basic" or "advanced"

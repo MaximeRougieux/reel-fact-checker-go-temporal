@@ -49,6 +49,12 @@ func main() {
 	}
 
 	var searcher factcheck.Searcher = factcheck.MockSearcher{}
+	if os.Getenv("TAVILY_API_KEY") != "" {
+		searcher = factcheck.NewTavilySearcher(config.SearchTopic(), config.SearchDepth())
+		log.Println("searcher: Tavily")
+	} else {
+		log.Println("searcher: mock (no TAVILY_API_KEY)")
+	}
 	var judge factcheck.ClaimJudge = factcheck.MockJudge{}
 	var summarizer factcheck.Summarizer = factcheck.MockSummarizer{}
 
