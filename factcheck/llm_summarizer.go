@@ -5,25 +5,20 @@ import (
 	_ "embed"
 	"encoding/json"
 	"sort"
-
-	"github.com/anthropics/anthropic-sdk-go/v2"
 )
 
 //go:embed prompts/summarize.system.md
 var summarizeSystemPrompt string
 
-// ClaudeSummarizer drafts the final report. Labels and probabilities are
+// LLMSummarizer drafts the final report. Labels and probabilities are
 // computed upstream; the model only writes them up.
-type ClaudeSummarizer struct {
-	client anthropic.Client
-	model  string
+type LLMSummarizer struct {
+	llm LLM
 }
 
-func NewClaudeSummarizer(model string) *ClaudeSummarizer {
-	return &ClaudeSummarizer{client: newClaudeClient(), model: model}
-}
+func NewLLMSummarizer(llm LLM) *LLMSummarizer { return &LLMSummarizer{llm: llm} }
 
-func (s *ClaudeSummarizer) Summarize(ctx context.Context, verdicts []Verdict) (string, error) {
+func (s *LLMSummarizer) Summarize(ctx context.Context, verdicts []Verdict) (string, error) {
 	type src struct {
 		URL     string  `json:"url"`
 		Score   float64 `json:"relevance"`
@@ -50,5 +45,5 @@ func (s *ClaudeSummarizer) Summarize(ctx context.Context, verdicts []Verdict) (s
 	if err != nil {
 		return "", err
 	}
-	return textCall(ctx, s.client, s.model, summarizeSystemPrompt, "<claims>\n"+string(in)+"\n</claims>")
+	return s.llm.Text(ctx, summarizeSystemPrompt, "<claims>\n"+string(in)+"\n</claims>")
 }

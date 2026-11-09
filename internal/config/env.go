@@ -31,7 +31,27 @@ func LoadDotEnv(path string) {
 	}
 }
 
-func ExtractorModel() string { return get("ANTHROPIC_MODEL", "claude-haiku-5-5") }
+// LLMProvider picks the text-model provider: LLM_PROVIDER if set, otherwise
+// whichever API key is present. Empty means no provider is configured and the
+// Worker uses mocks.
+func LLMProvider() string {
+	if p := os.Getenv("LLM_PROVIDER"); p != "" {
+		return strings.ToLower(p)
+	}
+	if os.Getenv("ANTHROPIC_API_KEY") != "" {
+		return "claude"
+	}
+	return ""
+}
+
+// LLMKeyVar is the environment variable holding a provider's API key.
+func LLMKeyVar(provider string) string {
+	return "ANTHROPIC_API_KEY"
+}
+
+func ExtractorModel() string {
+	return get("ANTHROPIC_MODEL", "claude-haiku-5-5")
+}
 
 func Fetcher() string  { return get("FETCHER", "mock") } // "mock" or "browser"
 func AudioDir() string { return get("AUDIO_DIR", "data/audio") }
@@ -41,7 +61,9 @@ func Transcriber() string  { return get("TRANSCRIBER", "mock") } // "mock" or "w
 func WhisperCLI() string   { return get("WHISPER_CLI", "whisper-cli") }
 func WhisperModel() string { return get("WHISPER_MODEL", "models/ggml-large-v3-turbo.bin") }
 
-func JudgeModel() string { return get("ANTHROPIC_JUDGE_MODEL", ExtractorModel()) }
+func JudgeModel() string {
+	return get("ANTHROPIC_JUDGE_MODEL", ExtractorModel())
+}
 
 func SearchTopic() string { return get("TAVILY_TOPIC", "news") } // "news" or "general"
 

@@ -15,15 +15,30 @@ func main() {
 	config.LoadDotEnv(".env")
 
 	var extractor factcheck.ClaimExtractor = factcheck.MockExtractor{}
-	if os.Getenv("ANTHROPIC_API_KEY") != "" {
-		e, err := factcheck.NewClaudeExtractor(config.ExtractorModel())
+	var judge factcheck.ClaimJudge = factcheck.MockJudge{}
+	var summarizer factcheck.Summarizer = factcheck.MockSummarizer{}
+	if provider := config.LLMProvider(); provider != "" {
+		if os.Getenv(config.LLMKeyVar(provider)) == "" {
+			log.Fatalf("LLM provider %q needs %s", provider, config.LLMKeyVar(provider))
+		}
+		extractLLM, err := factcheck.NewLLM(provider, config.ExtractorModel())
 		if err != nil {
 			log.Fatalln(err)
 		}
-		extractor = e
-		log.Println("claim extractor: Claude", config.ExtractorModel())
+		judgeLLM, err := factcheck.NewLLM(provider, config.JudgeModel())
+		if err != nil {
+			log.Fatalln(err)
+		}
+		if extractor, err = factcheck.NewLLMExtractor(extractLLM); err != nil {
+			log.Fatalln(err)
+		}
+		if judge, err = factcheck.NewLLMJudge(judgeLLM); err != nil {
+			log.Fatalln(err)
+		}
+		summarizer = factcheck.NewLLMSummarizer(judgeLLM)
+		log.Println("LLM provider:", provider, "| extractor model:", config.ExtractorModel(), "| judge and summarizer model:", config.JudgeModel())
 	} else {
-		log.Println("claim extractor: mock (no ANTHROPIC_API_KEY)")
+		log.Println("claim extractor, judge, summarizer: mock (no ANTHROPIC_API_KEY)")
 	}
 
 	c, err := client.Dial(client.Options{HostPort: config.Address(), Namespace: config.Namespace()})
@@ -54,20 +69,6 @@ func main() {
 		log.Println("searcher: Tavily")
 	} else {
 		log.Println("searcher: mock (no TAVILY_API_KEY)")
-	}
-	var judge factcheck.ClaimJudge = factcheck.MockJudge{}
-	if os.Getenv("ANTHROPIC_API_KEY") != "" {
-		j, err := factcheck.NewClaudeJudge(config.JudgeModel())
-		if err != nil {
-			log.Fatalln(err)
-		}
-		judge = j
-		log.Println("judge: Claude", config.JudgeModel())
-	}
-
-	var summarizer factcheck.Summarizer = factcheck.MockSummarizer{}
-	if os.Getenv("ANTHROPIC_API_KEY") != "" {
-		summarizer = factcheck.NewClaudeSummarizer(config.JudgeModel())
 	}
 
 	w := worker.New(c, config.TaskQueue(), worker.Options{})

@@ -5,8 +5,6 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-
-	"github.com/anthropics/anthropic-sdk-go/v2"
 )
 
 //go:embed prompts/extract_claims.system.md
@@ -15,29 +13,22 @@ var extractSystemPrompt string
 //go:embed prompts/extract_claims.schema.json
 var extractSchemaJSON []byte
 
-// ClaudeExtractor extracts claims with the Claude API. The SDK's own retries
-// are disabled: Temporal owns retry.
-type ClaudeExtractor struct {
-	client anthropic.Client
-	model  string
+// LLMExtractor extracts claims with any LLM provider.
+type LLMExtractor struct {
+	llm    LLM
 	schema map[string]any
 }
 
-// NewClaudeExtractor reads ANTHROPIC_API_KEY from the environment.
-func NewClaudeExtractor(model string) (*ClaudeExtractor, error) {
+func NewLLMExtractor(llm LLM) (*LLMExtractor, error) {
 	var schema map[string]any
 	if err := json.Unmarshal(extractSchemaJSON, &schema); err != nil {
 		return nil, fmt.Errorf("bad extraction schema: %w", err)
 	}
-	return &ClaudeExtractor{
-		client: newClaudeClient(),
-		model:  model,
-		schema: schema,
-	}, nil
+	return &LLMExtractor{llm: llm, schema: schema}, nil
 }
 
-func (e *ClaudeExtractor) Extract(ctx context.Context, transcript string) ([]Claim, error) {
-	text, err := structuredCall(ctx, e.client, e.model, extractSystemPrompt, e.schema,
+func (e *LLMExtractor) Extract(ctx context.Context, transcript string) ([]Claim, error) {
+	text, err := e.llm.Structured(ctx, extractSystemPrompt, e.schema,
 		"<transcript>\n"+transcript+"\n</transcript>")
 	if err != nil {
 		return nil, err
