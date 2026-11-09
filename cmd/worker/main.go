@@ -33,6 +33,13 @@ func main() {
 	defer c.Close()
 
 	var fetcher factcheck.AudioFetcher = factcheck.MockFetcher{}
+	if config.Fetcher() == "browser" {
+		fetcher = &factcheck.BrowserFetcher{Dir: config.AudioDir(), FFmpeg: config.FFmpeg()}
+		log.Println("audio fetcher: headless browser")
+	} else {
+		log.Println("audio fetcher: mock")
+	}
+
 	var transcriber factcheck.Transcriber = factcheck.MockTranscriber{}
 	var searcher factcheck.Searcher = factcheck.MockSearcher{}
 	var judge factcheck.ClaimJudge = factcheck.MockJudge{}
