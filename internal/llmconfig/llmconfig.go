@@ -44,5 +44,8 @@ func ExtractorModel() string {
 // JudgeModel is the model used to judge claims and write the summary. It
 // defaults to the extractor model.
 func JudgeModel() string {
+	if Provider() == "mistral" {
+		return config.Get("MISTRAL_JUDGE_MODEL", ExtractorModel())
+	}
 	return config.Get("ANTHROPIC_JUDGE_MODEL", ExtractorModel())
 }
