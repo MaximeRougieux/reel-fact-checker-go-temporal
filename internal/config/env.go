@@ -36,3 +36,7 @@ func ExtractorModel() string { return get("ANTHROPIC_MODEL", "claude-haiku-5-5")
 func Fetcher() string  { return get("FETCHER", "mock") } // "mock" or "browser"
 func AudioDir() string { return get("AUDIO_DIR", "data/audio") }
 func FFmpeg() string   { return get("FFMPEG_PATH", "ffmpeg") }
+
+func Transcriber() string  { return get("TRANSCRIBER", "mock") } // "mock" or "whisper"
+func WhisperCLI() string   { return get("WHISPER_CLI", "whisper-cli") }
+func WhisperModel() string { return get("WHISPER_MODEL", "models/ggml-large-v3-turbo.bin") }

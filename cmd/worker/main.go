@@ -41,6 +41,13 @@ func main() {
 	}
 
 	var transcriber factcheck.Transcriber = factcheck.MockTranscriber{}
+	if config.Transcriber() == "whisper" {
+		transcriber = &factcheck.WhisperTranscriber{CLI: config.WhisperCLI(), Model: config.WhisperModel(), AudioDir: config.AudioDir()}
+		log.Println("transcriber: local whisper.cpp")
+	} else {
+		log.Println("transcriber: mock")
+	}
+
 	var searcher factcheck.Searcher = factcheck.MockSearcher{}
 	var judge factcheck.ClaimJudge = factcheck.MockJudge{}
 	var summarizer factcheck.Summarizer = factcheck.MockSummarizer{}
