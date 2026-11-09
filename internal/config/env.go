@@ -44,3 +44,5 @@ func WhisperModel() string { return get("WHISPER_MODEL", "models/ggml-large-v3-t
 func SearchTopic() string { return get("TAVILY_TOPIC", "news") } // "news" or "general"
 
 func SearchDepth() string { return get("TAVILY_DEPTH", "basic") } // "basic" or "advanced"
+
+func JudgeModel() string { return get("ANTHROPIC_JUDGE_MODEL", ExtractorModel()) }

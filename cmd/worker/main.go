@@ -56,6 +56,15 @@ func main() {
 		log.Println("searcher: mock (no TAVILY_API_KEY)")
 	}
 	var judge factcheck.ClaimJudge = factcheck.MockJudge{}
+	if os.Getenv("ANTHROPIC_API_KEY") != "" {
+		j, err := factcheck.NewClaudeJudge(config.JudgeModel())
+		if err != nil {
+			log.Fatalln(err)
+		}
+		judge = j
+		log.Println("judge: Claude", config.JudgeModel())
+	}
+
 	var summarizer factcheck.Summarizer = factcheck.MockSummarizer{}
 
 	w := worker.New(c, config.TaskQueue(), worker.Options{})

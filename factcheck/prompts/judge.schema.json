@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "stances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "index": {"type": "integer"},
+          "stance": {"type": "string", "enum": ["supports", "partially_supports", "refutes", "partially_refutes", "neutral"]}
+        },
+        "required": ["index", "stance"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["stances"],
+  "additionalProperties": false
+}
