@@ -14,16 +14,18 @@ validate -> fetch audio -> transcribe -> extract claims -> check each claim in p
 |---|---|---|---|---|
 | `ValidateReelURL` | `url` | 5s | non-retryable if invalid | real (pure code, allowlist) |
 | `FetchAudio` | canonical url | 120s, heartbeat 30s | non-retryable `ReelNotRetrievable` (login wall, no media, redirect off Instagram); default otherwise | headless Chrome + ffmpeg (`FETCHER=browser`), mock by default |
-| `Transcribe` | `audioRef` | 300s, heartbeat 60s | default; non-retryable on bad ref / no speech | local whisper.cpp, Turbo model, language auto-detect (`TRANSCRIBER=whisper`), mock by default |
-| `ExtractClaims` | `transcript` | 60s | default | Claude (`ANTHROPIC_MODEL`, default `claude-haiku-5-5`), structured output |
-| `CheckClaim` x N | `claim` | 120s | default; Tavily 429 retries after its Retry-After; 401 non-retryable | Tavily search, then Claude judge |
-| `SummarizeReport` | `verdicts` | 60s | default | Claude |
+| `Transcribe` | `audioRef` | 300s, heartbeat 60s | default; non-retryable on bad ref / no speech | local whisper.cpp, Turbo model, language auto-detect (`TRANSCRIBER=whisper`), or Mistral Voxtral (`TRANSCRIBER=voxtral`, `VOXTRAL_MODEL`); mock by default |
+| `ExtractClaims` | `transcript` | 60s | default | LLM provider (Claude or Mistral), structured output |
+| `CheckClaim` x N | `claim` | 120s | default; Tavily 429 retries after its Retry-After; 401 non-retryable | Tavily search, then LLM judge |
+| `SummarizeReport` | `verdicts` | 60s | default | LLM provider |
 
 Search: Tavily `basic` depth by default (`TAVILY_DEPTH=advanced` for longer extracts, 2 credits), `topic=news` (`TAVILY_TOPIC`), social platforms excluded, results scored below 0.3 dropped. Identical queries are served from an in-memory cache (24h, per Worker) at no credit cost.
 
 Claims the extractor marks `verifiable: false` (private matters no public source could settle) are not searched and appear as `not_checkable`.
 
 Judge: the model labels each snippet supports / refutes / neutral. Probabilities are computed in code from the relevance-weighted stances. Neutral snippets are not votes: "insufficient" shrinks as decisive evidence accumulates, and is 1.0 with none. A supported/refuted verdict whose top probability is under 0.6 is reported as `contested`.
+
+Text models sit behind one `LLM` interface with two providers: Claude (`ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, default `claude-haiku-5-5`) and Mistral (`MISTRAL_API_KEY`, `MISTRAL_MODEL`, default `mistral-small-latest`, JSON-schema structured output). `LLM_PROVIDER` picks one; otherwise the provider whose key is set is used. The extractor, judge and summarizer take any `LLM`, and `MISTRAL_JUDGE_MODEL` / `ANTHROPIC_JUDGE_MODEL` can set a different model for judging and summarizing.
 
 All clients sit behind interfaces and are built once per Worker (dependency injection). Prompts and schemas are in `factcheck/prompts/`. Models can be swapped per step by env var; a Jev-style decision model would slot in behind `ClaimJudge`.
 
@@ -46,7 +48,7 @@ Invalid URL or an unretrievable reel fails the Workflow (non-retryable). A claim
 | Pattern | Why it applies here |
 |---|---|
 | `parallel-execution` | Claim checks are independent, at most 20 pending |
-| `activity-dependency-injection` | Browser, Whisper, Claude and Tavily clients built once per Worker |
+| `activity-dependency-injection` | Browser, transcriber, LLM and Tavily clients built once per Worker |
 | `non-retryable-errors` | Invalid URL, login wall and bad key can never succeed |
 | `delayed-retry` | Tavily returns 429 with Retry-After |
 | `long-running-activity` | Fetch and transcribe run longer than 30s, so they heartbeat |

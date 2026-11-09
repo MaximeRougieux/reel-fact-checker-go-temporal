@@ -11,8 +11,8 @@ A durable fact-checking pipeline for Instagram reels, built on Temporal (Go) wit
 Only needed for real (non-mock) components:
 
 - Google Chrome, and `ffmpeg` (audio fetch)
-- `whisper-cpp` and a Whisper model (transcription)
-- An [Anthropic API key](https://console.anthropic.com/) and a [Tavily API key](https://tavily.com/) (claim extraction, judging, summary, search)
+- Transcription, either local (`whisper-cpp` and a Whisper model) or through the Mistral API (Voxtral, no local install)
+- A key for one LLM provider, [Anthropic](https://console.anthropic.com/) or [Mistral](https://console.mistral.ai/) (claim extraction, judging, summary), and a [Tavily API key](https://tavily.com/) (search)
 
 ## Setup
 
@@ -31,9 +31,14 @@ The server listens on `localhost:7233` and the Temporal UI is at http://localhos
 cp .env.example .env
 ```
 
-Fill in `ANTHROPIC_API_KEY` and `TAVILY_API_KEY` in `.env` (never commit it). Without the keys, the Worker falls back to mock components and logs which implementation each step uses.
+Fill in `TAVILY_API_KEY` and either `ANTHROPIC_API_KEY` or `MISTRAL_API_KEY` in `.env` (never commit it). The LLM provider is picked from whichever key is set; set `LLM_PROVIDER=claude` or `LLM_PROVIDER=mistral` to choose when both are. Without the keys, the Worker falls back to mock components and logs which implementation each step uses.
 
 ### 3. Real audio and transcription (optional)
+
+Both options need `ffmpeg` and Chrome to fetch the audio.
+
+- **Voxtral (Mistral API):** set `MISTRAL_API_KEY` and run the Worker with `TRANSCRIBER=voxtral`. Nothing else to install.
+- **Local whisper.cpp:** install it and download a model, then run the Worker with `TRANSCRIBER=whisper`.
 
 ```sh
 brew install ffmpeg whisper-cpp
@@ -49,7 +54,7 @@ Use one terminal each, from the project root, after the Temporal server is runni
 **Worker** (runs the Workflow and Activities):
 
 ```sh
-# real fetcher and transcriber
+# real fetcher and local transcriber (use TRANSCRIBER=voxtral for the Mistral API)
 FETCHER=browser TRANSCRIBER=whisper go run ./cmd/worker
 
 # or, all mocks
