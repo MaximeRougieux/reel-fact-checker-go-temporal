@@ -38,7 +38,7 @@ func main() {
 		summarizer = factcheck.NewLLMSummarizer(judgeLLM)
 		log.Println("LLM provider:", provider, "| extractor model:", config.ExtractorModel(), "| judge and summarizer model:", config.JudgeModel())
 	} else {
-		log.Println("claim extractor, judge, summarizer: mock (no ANTHROPIC_API_KEY)")
+		log.Println("claim extractor, judge, summarizer: mock (no ANTHROPIC_API_KEY or MISTRAL_API_KEY)")
 	}
 
 	c, err := client.Dial(client.Options{HostPort: config.Address(), Namespace: config.Namespace()})

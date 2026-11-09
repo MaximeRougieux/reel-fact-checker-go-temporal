@@ -38,18 +38,27 @@ func LLMProvider() string {
 	if p := os.Getenv("LLM_PROVIDER"); p != "" {
 		return strings.ToLower(p)
 	}
-	if os.Getenv("ANTHROPIC_API_KEY") != "" {
+	switch {
+	case os.Getenv("ANTHROPIC_API_KEY") != "":
 		return "claude"
+	case os.Getenv("MISTRAL_API_KEY") != "":
+		return "mistral"
 	}
 	return ""
 }
 
 // LLMKeyVar is the environment variable holding a provider's API key.
 func LLMKeyVar(provider string) string {
+	if provider == "mistral" {
+		return "MISTRAL_API_KEY"
+	}
 	return "ANTHROPIC_API_KEY"
 }
 
 func ExtractorModel() string {
+	if LLMProvider() == "mistral" {
+		return get("MISTRAL_MODEL", "mistral-small-latest")
+	}
 	return get("ANTHROPIC_MODEL", "claude-haiku-5-5")
 }
 
