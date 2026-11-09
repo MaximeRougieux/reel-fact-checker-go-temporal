@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {"type": "string"},
+          "kind": {"type": "string", "enum": ["fact", "implication"]},
+          "premises": {"type": "array", "items": {"type": "string"}},
+          "timestamp_sec": {"type": "integer"},
+          "verifiable": {"type": "boolean"}
+        },
+        "required": ["text", "kind", "premises", "timestamp_sec", "verifiable"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["claims"],
+  "additionalProperties": false
+}
