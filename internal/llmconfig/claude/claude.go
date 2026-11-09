@@ -1,4 +1,5 @@
-package factcheck
+// Package claude is the Anthropic text-model provider.
+package claude
 
 import (
 	"context"
@@ -8,18 +9,18 @@ import (
 	"github.com/anthropics/anthropic-sdk-go/v2/option"
 )
 
-// ClaudeLLM is the Anthropic provider. It reads ANTHROPIC_API_KEY from the
+// LLM is the Anthropic provider. It reads ANTHROPIC_API_KEY from the
 // environment. The SDK's own retries are disabled: Temporal owns retry.
-type ClaudeLLM struct {
+type LLM struct {
 	client anthropic.Client
 	model  string
 }
 
-func NewClaudeLLM(model string) *ClaudeLLM {
-	return &ClaudeLLM{client: anthropic.NewClient(option.WithMaxRetries(0)), model: model}
+func New(model string) *LLM {
+	return &LLM{client: anthropic.NewClient(option.WithMaxRetries(0)), model: model}
 }
 
-func (c *ClaudeLLM) Structured(ctx context.Context, system string, schema map[string]any, user string) (string, error) {
+func (c *LLM) Structured(ctx context.Context, system string, schema map[string]any, user string) (string, error) {
 	return c.call(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.Model(c.model),
 		MaxTokens: 4096,
@@ -32,7 +33,7 @@ func (c *ClaudeLLM) Structured(ctx context.Context, system string, schema map[st
 	})
 }
 
-func (c *ClaudeLLM) Text(ctx context.Context, system, user string) (string, error) {
+func (c *LLM) Text(ctx context.Context, system, user string) (string, error) {
 	return c.call(ctx, anthropic.MessageNewParams{
 		Model:        anthropic.Model(c.model),
 		MaxTokens:    8192,
@@ -42,7 +43,7 @@ func (c *ClaudeLLM) Text(ctx context.Context, system, user string) (string, erro
 	})
 }
 
-func (c *ClaudeLLM) call(ctx context.Context, p anthropic.MessageNewParams) (string, error) {
+func (c *LLM) call(ctx context.Context, p anthropic.MessageNewParams) (string, error) {
 	resp, err := c.client.Messages.New(ctx, p)
 	if err != nil {
 		return "", err

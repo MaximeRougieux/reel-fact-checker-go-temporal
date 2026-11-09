@@ -46,9 +46,3 @@ func TestLLMJudgeProbabilities(t *testing.T) {
 		})
 	}
 }
-
-func TestNewLLMUnknownProvider(t *testing.T) {
-	if _, err := NewLLM("nope", "m"); err == nil {
-		t.Fatal("want error for unknown provider")
-	}
-}

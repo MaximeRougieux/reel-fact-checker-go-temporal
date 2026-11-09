@@ -13,6 +13,9 @@ import (
 	"time"
 
 	"go.temporal.io/sdk/temporal"
+
+	"reel-fact-checker-go-temporal/internal/httperr"
+	"reel-fact-checker-go-temporal/internal/llmconfig/mistral"
 )
 
 // VoxtralTranscriber sends the audio file to Mistral's Voxtral transcription
@@ -26,7 +29,7 @@ type VoxtralTranscriber struct {
 }
 
 func NewVoxtralTranscriber(model, audioDir string) *VoxtralTranscriber {
-	return &VoxtralTranscriber{BaseURL: mistralBaseURL, Model: model, AudioDir: audioDir,
+	return &VoxtralTranscriber{BaseURL: mistral.DefaultBaseURL, Model: model, AudioDir: audioDir,
 		http: &http.Client{Timeout: 240 * time.Second}}
 }
 
@@ -69,7 +72,7 @@ func (v *VoxtralTranscriber) Transcribe(ctx context.Context, audioRef string) (s
 		return "", err
 	}
 	defer resp.Body.Close()
-	if err := statusError("Voxtral", resp); err != nil {
+	if err := httperr.StatusError("Voxtral", resp); err != nil {
 		return "", err
 	}
 

@@ -22,11 +22,11 @@ func main() {
 		if os.Getenv(llmconfig.KeyVar(provider)) == "" {
 			log.Fatalf("LLM provider %q needs %s", provider, llmconfig.KeyVar(provider))
 		}
-		extractLLM, err := factcheck.NewLLM(provider, llmconfig.ExtractorModel())
+		extractLLM, err := llmconfig.NewLLM(provider, llmconfig.ExtractorModel())
 		if err != nil {
 			log.Fatalln(err)
 		}
-		judgeLLM, err := factcheck.NewLLM(provider, llmconfig.JudgeModel())
+		judgeLLM, err := llmconfig.NewLLM(provider, llmconfig.JudgeModel())
 		if err != nil {
 			log.Fatalln(err)
 		}

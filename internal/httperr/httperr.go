@@ -1,4 +1,4 @@
-package factcheck
+package httperr
 
 import (
 	"fmt"
@@ -10,10 +10,10 @@ import (
 	"go.temporal.io/sdk/temporal"
 )
 
-// statusError turns a non-200 provider response into a Temporal error, or nil
+// StatusError turns a non-200 provider response into a Temporal error, or nil
 // for 200. A rejected key or request can never succeed on retry, so it is
 // non-retryable; a 429 retries after the provider's Retry-After.
-func statusError(service string, resp *http.Response) error {
+func StatusError(service string, resp *http.Response) error {
 	switch resp.StatusCode {
 	case http.StatusOK:
 		return nil

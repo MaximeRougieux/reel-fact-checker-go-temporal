@@ -3,11 +3,29 @@
 package llmconfig
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
+	"reel-fact-checker-go-temporal/factcheck"
 	"reel-fact-checker-go-temporal/internal/config"
+	"reel-fact-checker-go-temporal/internal/llmconfig/claude"
+	"reel-fact-checker-go-temporal/internal/llmconfig/mistral"
 )
+
+// NewLLM builds the client for a provider ("claude" or "mistral"). API keys
+// are read from the environment by the provider (ANTHROPIC_API_KEY,
+// MISTRAL_API_KEY). Providers do not retry on their own: Temporal owns retry.
+func NewLLM(provider, model string) (factcheck.LLM, error) {
+	switch provider {
+	case "claude":
+		return claude.New(model), nil
+	case "mistral":
+		return mistral.New(model), nil
+	default:
+		return nil, fmt.Errorf("unknown LLM provider %q (want \"claude\" or \"mistral\")", provider)
+	}
+}
 
 // Provider picks the text-model provider: LLM_PROVIDER if set, otherwise
 // whichever API key is present. Empty means no provider is configured and the

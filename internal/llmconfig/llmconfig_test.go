@@ -60,3 +60,14 @@ func TestModels(t *testing.T) {
 		t.Errorf("mistral judge override: %q", JudgeModel())
 	}
 }
+
+func TestNewLLM(t *testing.T) {
+	for _, p := range []string{"claude", "mistral"} {
+		if l, err := NewLLM(p, "m"); err != nil || l == nil {
+			t.Errorf("NewLLM(%q) = %v, %v", p, l, err)
+		}
+	}
+	if _, err := NewLLM("nope", "m"); err == nil {
+		t.Fatal("want error for unknown provider")
+	}
+}

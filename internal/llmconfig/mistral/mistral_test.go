@@ -1,4 +1,4 @@
-package factcheck
+package mistral
 
 import (
 	"context"
@@ -11,12 +11,12 @@ import (
 	"go.temporal.io/sdk/temporal"
 )
 
-func mistralAgainst(t *testing.T, h http.HandlerFunc) *MistralLLM {
+func mistralAgainst(t *testing.T, h http.HandlerFunc) *LLM {
 	t.Helper()
 	t.Setenv("MISTRAL_API_KEY", "test-key")
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
-	m := NewMistralLLM("mistral-small-latest")
+	m := New("mistral-small-latest")
 	m.BaseURL = srv.URL
 	return m
 }

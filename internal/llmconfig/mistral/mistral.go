@@ -1,4 +1,5 @@
-package factcheck
+// Package mistral is the Mistral text-model provider.
+package mistral
 
 import (
 	"bytes"
@@ -9,24 +10,27 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"reel-fact-checker-go-temporal/internal/httperr"
 )
 
-const mistralBaseURL = "https://api.mistral.ai"
+// DefaultBaseURL is the Mistral API root, shared with the Voxtral transcriber.
+const DefaultBaseURL = "https://api.mistral.ai"
 
-// MistralLLM is the Mistral provider, over plain HTTP. The key is read from
+// LLM is the Mistral provider, over plain HTTP. The key is read from
 // MISTRAL_API_KEY and sent as a bearer token, never logged. There are no
 // client-side retries: Temporal owns retry.
-type MistralLLM struct {
+type LLM struct {
 	BaseURL string
 	Model   string
 	http    *http.Client
 }
 
-func NewMistralLLM(model string) *MistralLLM {
-	return &MistralLLM{BaseURL: mistralBaseURL, Model: model, http: &http.Client{Timeout: 120 * time.Second}}
+func New(model string) *LLM {
+	return &LLM{BaseURL: DefaultBaseURL, Model: model, http: &http.Client{Timeout: 120 * time.Second}}
 }
 
-func (m *MistralLLM) Structured(ctx context.Context, system string, schema map[string]any, user string) (string, error) {
+func (m *LLM) Structured(ctx context.Context, system string, schema map[string]any, user string) (string, error) {
 	return m.chat(ctx, map[string]any{
 		"model":       m.Model,
 		"max_tokens":  4096,
@@ -39,7 +43,7 @@ func (m *MistralLLM) Structured(ctx context.Context, system string, schema map[s
 	})
 }
 
-func (m *MistralLLM) Text(ctx context.Context, system, user string) (string, error) {
+func (m *LLM) Text(ctx context.Context, system, user string) (string, error) {
 	return m.chat(ctx, map[string]any{
 		"model":      m.Model,
 		"max_tokens": 8192,
@@ -51,7 +55,7 @@ func messages(system, user string) []map[string]string {
 	return []map[string]string{{"role": "system", "content": system}, {"role": "user", "content": user}}
 }
 
-func (m *MistralLLM) chat(ctx context.Context, payload map[string]any) (string, error) {
+func (m *LLM) chat(ctx context.Context, payload map[string]any) (string, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return "", err
@@ -68,7 +72,7 @@ func (m *MistralLLM) chat(ctx context.Context, payload map[string]any) (string, 
 		return "", err
 	}
 	defer resp.Body.Close()
-	if err := statusError("Mistral", resp); err != nil {
+	if err := httperr.StatusError("Mistral", resp); err != nil {
 		return "", err
 	}
 
