@@ -66,6 +66,15 @@ Last run (reel De1eZNCodUl): Completed in ~43s with six claims: one supported (9
 - No rate limiting on Tavily; Jev not tried; audio storage is local disk.
 - Fetching Instagram with a headless browser is fragile and may break or be blocked.
 
+## Ideas
+
+Not built yet; things to try next with Temporal.
+
+- **Idempotent Activities that spend Tavily credits.** An Activity can run more than once (a retry after a timeout, or a Worker crash after the call but before the result is recorded), and each run would spend credits again. Today the only protection is the in-memory 24h query cache, which is per Worker and lost on restart. Idea: store each search result durably, keyed by the query (or by Workflow ID plus claim), and check that store before calling Tavily, so a retry or a re-run reads the stored result instead of paying again. If Tavily offers an idempotency key, use it as well.
+- **Workflow versioning when the judge prompt changes.** Changing prompt text inside an Activity does not break replay of running Workflows, but changing Workflow code that alters the sequence of steps does, so that needs `workflow.GetVersion` patching or Worker Versioning for runs still in flight. The prompt change has a second effect: cached reports (a closed run per reel) were produced with the old prompt and are still served. Idea: record a judge and prompt version in the Report and make it part of the cache key, or treat a version mismatch as a cache miss.
+- **A Signal to re-run, instead of a new Workflow.** "Re-run" currently starts a new run under the same Workflow ID. Alternative: keep one long-lived Workflow per reel that stays open after finishing, answers a Query for the latest report, and recomputes when it receives a `rerun` Signal (or Update, to return the new report). One history per reel and a natural place to enforce "one run at a time"; the cost is that the history grows with every re-run, so it would need Continue-As-New, and the cache would no longer depend on Temporal retaining a closed run.
+- **A human "wait for review" step when the judge is not confident.** When a claim ends up `contested` (or below a confidence threshold), the Workflow pauses until a reviewer sends a Signal or Update with a decision, using `workflow.Await` with a timeout. The `stage` Query would show "waiting for review" and the UI would offer confirm or override. The wait is a durable timer and holds no Worker resources; if nobody answers before the timeout, the automatic verdict stands and is marked as unreviewed.
+
 ## Changed this round
 
 Judge: added `partially_supports` / `partially_refutes` (half weight; details like times and numbers must match for a full stance). Added whole-run caching by reel id, the `stage` Query, and a small API and web page.
