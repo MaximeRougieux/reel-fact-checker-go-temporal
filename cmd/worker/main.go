@@ -56,10 +56,17 @@ func main() {
 	}
 
 	var transcriber factcheck.Transcriber = factcheck.MockTranscriber{}
-	if config.Transcriber() == "whisper" {
+	switch config.Transcriber() {
+	case "whisper":
 		transcriber = &factcheck.WhisperTranscriber{CLI: config.WhisperCLI(), Model: config.WhisperModel(), AudioDir: config.AudioDir()}
 		log.Println("transcriber: local whisper.cpp")
-	} else {
+	case "voxtral":
+		if os.Getenv("MISTRAL_API_KEY") == "" {
+			log.Fatalln("TRANSCRIBER=voxtral needs MISTRAL_API_KEY")
+		}
+		transcriber = factcheck.NewVoxtralTranscriber(config.VoxtralModel(), config.AudioDir())
+		log.Println("transcriber: Mistral Voxtral", config.VoxtralModel())
+	default:
 		log.Println("transcriber: mock")
 	}
 

@@ -66,9 +66,11 @@ func Fetcher() string  { return get("FETCHER", "mock") } // "mock" or "browser"
 func AudioDir() string { return get("AUDIO_DIR", "data/audio") }
 func FFmpeg() string   { return get("FFMPEG_PATH", "ffmpeg") }
 
-func Transcriber() string  { return get("TRANSCRIBER", "mock") } // "mock" or "whisper"
+func Transcriber() string  { return get("TRANSCRIBER", "mock") } // "mock", "whisper" or "voxtral"
 func WhisperCLI() string   { return get("WHISPER_CLI", "whisper-cli") }
 func WhisperModel() string { return get("WHISPER_MODEL", "models/ggml-large-v3-turbo.bin") }
+
+func VoxtralModel() string { return get("VOXTRAL_MODEL", "voxtral-mini-latest") }
 
 func JudgeModel() string {
 	return get("ANTHROPIC_JUDGE_MODEL", ExtractorModel())
